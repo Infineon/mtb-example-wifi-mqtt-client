@@ -80,7 +80,7 @@ TaskHandle_t publisher_task_handle;
 /* Structure to store publish message information. */
 IotMqttPublishInfo_t publishInfo =
 {
-    .qos = MQTT_MESSAGES_QOS,
+    .qos = (IotMqttQos_t) MQTT_MESSAGES_QOS,
     .pTopicName = MQTT_TOPIC,
     .topicNameLength = (sizeof(MQTT_TOPIC) - 1),
     .retryMs = PUBLISH_RETRY_MS,
@@ -174,7 +174,6 @@ void publisher_task(void *pvParameters)
 /******************************************************************************
  * Function Name: isr_button_press
  ******************************************************************************
- *
  * Summary:
  *  GPIO interrupt service routine. This function detects button
  *  presses and sends task notifications to the publisher task about the new 
@@ -185,7 +184,7 @@ void publisher_task(void *pvParameters)
  *  cyhal_gpio_event_t event : GPIO event type (unused)
  *
  * Return:
- *  None
+ *  void
  *
  ******************************************************************************/
 void isr_button_press(void *callback_arg, cyhal_gpio_event_t event)
@@ -212,6 +211,29 @@ void isr_button_press(void *callback_arg, cyhal_gpio_event_t event)
                        &xHigherPriorityTaskWoken);
 
     portYIELD_FROM_ISR(xHigherPriorityTaskWoken);
+}
+
+/******************************************************************************
+ * Function Name: publisher_cleanup
+ ******************************************************************************
+ * Summary:
+ *  Cleanup function for the publisher task that disables the user button  
+ *  interrupt. This operation needs to be necessarily performed before deleting  
+ *  the publisher task.
+ *
+ * Parameters:
+ *  void
+ *
+ * Return:
+ *  void
+ *
+ ******************************************************************************/
+void publisher_cleanup(void)
+{
+    /* Deregister the ISR and disable the interrupt on the user button. */
+    cyhal_gpio_register_callback(CYBSP_USER_BTN, NULL, NULL);
+    cyhal_gpio_enable_event(CYBSP_USER_BTN, CYHAL_GPIO_IRQ_FALL,
+                            USER_BTN_INTR_PRIORITY, false);
 }
 
 /* [] END OF FILE */

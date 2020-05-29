@@ -58,7 +58,7 @@ This example requires no additional software or tools.
 
 3. In the **Project Creator - Select Application** dialog, choose the example.
 
-4. Optionally, update the **Application Name** and **Location** fields with the application name and local path where the application is created.
+4. Optionally, update the **Application Name:** and **Location** fields with the application name and local path where the application is created.
 
 5. Click **Create** to complete the application creation process.
 
@@ -109,7 +109,7 @@ For more details, see the "Exporting to IDEs" section of the ModusToolbox User G
                - `CLIENT_PRIVATE_KEY` - *xxxxxxxxxx.private.key*
                - `ROOT_CA_CERTIFICATE` - Root CA certificate
             
-            You can use the HTML utility available [here](https://github.com/cypresssemiconductorco/amazon-freertos/blob/master/tools/certificate_configuration/PEMfileToCString.html) to convert the certificates and keys from PEM format to C string format. You need to clone the repository from GitHub to use the utility.
+            You can either convert the values to strings manually following the format shown in *mqtt_client_config.h* or you can use the HTML utility available [here](https://github.com/cypresssemiconductorco/amazon-freertos/blob/master/tools/certificate_configuration/PEMfileToCString.html) to convert the certificates and keys from PEM format to C string format. You need to clone the repository from GitHub to use the utility.
          
       3. Optional configuration: You can modify the configuration macros in the following files according to your application: 
          - *configs/iot_config.h* used by the [MQTT library](https://github.com/cypresssemiconductorco/mqtt)
@@ -160,7 +160,7 @@ For more details, see the "Exporting to IDEs" section of the ModusToolbox User G
 
    Alternatively, the publish and subscribe functionalities of the MQTT client can be individually verified using the Test MQTT client from the AWS IoT Console. 
    
-   - *To verify the subscribe functionality*: Using the Test MQTT client from theAWS IoT Console, publish messages such as "TURN ON" and "TURN OFF" on the topic specified by the `MQTT_TOPIC` macro in *mqtt_client_config.h* to control the LED state on the kit.
+   - *To verify the subscribe functionality*: Using the Test MQTT client from the AWS IoT Console, publish messages such as "TURN ON" and "TURN OFF" on the topic specified by the `MQTT_TOPIC` macro in *mqtt_client_config.h* to control the LED state on the kit.
 
    - *To verify the publish functionality*: From the Test MQTT client, subscribe to the MQTT topic specified by the `MQTT_TOPIC` macro and confirm that the messages published by the kit are displayed on the Test MQTT client's console.
    
@@ -174,7 +174,7 @@ You can debug the example to step through the code. In the IDE, use the **\<Appl
 
 This example implements three RTOS tasks: MQTT client, Publisher, and Subscriber. The main function initializes the BSP and the retarget-io library, and creates the MQTT client task.
 
-The MQTT client task initializes the Wi-Fi Connection Manager (WCM) and connects to a Wi-Fi access point (AP) using the Wi-Fi network credentials that are configured in *mqtt_client_config.h*. Upon successful connection, the task initializes the MQTT library and establishes a connection with an MQTT Broker/Server. 
+The MQTT client task initializes the Wi-Fi Connection Manager (WCM) and connects to a Wi-Fi access point (AP) using the Wi-Fi network credentials that are configured in *mqtt_client_config.h*. Upon successful Wi-Fi connection, the task initializes the MQTT library and establishes a connection with an MQTT Broker/Server. 
 
 The MQTT connection is configured to be secure by default; the secure connection requires a client certificate, a private key, and the Root CA certificate of the MQTT Broker that are configured in *mqtt_client_config.h*. 
 
@@ -240,6 +240,7 @@ Document Title: CE229889 - AnyCloud Example: MQTT Client
 | Version | Description of Change |
 | ------- | --------------------- |
 | 1.0.0   | New code example      |
+| 1.1.0   | Minor bug fixes and Makefile updates to sync with BSP changes |
 
 ------
 

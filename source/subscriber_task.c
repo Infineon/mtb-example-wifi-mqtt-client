@@ -82,7 +82,7 @@ uint32_t current_device_state = DEVICE_OFF_STATE;
 /* Configure the subscription information structure. */
 IotMqttSubscription_t subscribeInfo =
 {
-    .qos = MQTT_MESSAGES_QOS,
+    .qos = (IotMqttQos_t) MQTT_MESSAGES_QOS,
     .pTopicFilter = MQTT_TOPIC,
     .topicFilterLength = (sizeof(MQTT_TOPIC) - 1),
     /* Configure the callback function to handle incoming MQTT messages */
@@ -137,7 +137,7 @@ void subscriber_task(void *pvParameters)
         printf("MQTT Subscribe failed with error '%s'.\n\n",
                IotMqtt_strerror((IotMqttError_t) result));
         xQueueOverwrite(mqtt_status_q, &mqtt_subscribe_status);
-        vTaskSuspend( NULL);
+        vTaskSuspend( NULL );
     }
 
     printf("MQTT client subscribed to the topic '%.*s' successfully.\n\n", 

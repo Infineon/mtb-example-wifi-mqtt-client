@@ -59,6 +59,7 @@ extern TaskHandle_t publisher_task_handle;
 * Function Prototypes
 ********************************************************************************/
 void publisher_task(void *pvParameters);
+void publisher_cleanup(void);
 
 #endif /* PUBLISHER_TASK_H_ */
 

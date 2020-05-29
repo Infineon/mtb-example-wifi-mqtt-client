@@ -76,6 +76,9 @@ int main()
     result = cybsp_init();
     CY_ASSERT(result == CY_RSLT_SUCCESS);
 
+    /* To avoid compiler warnings. */
+    (void) result;
+
     /* Enable global interrupts. */
     __enable_irq();
 

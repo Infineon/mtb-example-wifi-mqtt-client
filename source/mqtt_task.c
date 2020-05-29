@@ -60,6 +60,7 @@
 /* Middleware libraries */
 #include "cy_retarget_io.h"
 #include "cy_wcm.h"
+#include "cy_lwip.h"
 #include "cy_iot_network_secured_socket.h"
 #include "iot_init.h"
 #include "iot_clock.h"
@@ -71,6 +72,9 @@
  * various operations.
  */
 #define MQTT_STATUS_QUEUE_LENGTH         (1u)
+
+/* Time in milliseconds to wait before creating the publisher task. */
+#define TASK_CREATION_DELAY_MS           (2000u)
 
 /* Flag Masks for tracking which cleanup functions must be called. */
 #define WCM_INITIALIZED                  (1lu << 0)
@@ -170,6 +174,9 @@ void mqtt_client_task(void *pvParameters)
         goto exit_cleanup;
     }
 
+    /* Wait for the subscribe operation to complete. */
+    vTaskDelay(pdMS_TO_TICKS(TASK_CREATION_DELAY_MS));
+
     /* Create the publisher task and cleanup if the operation fails. */
     if (pdPASS != xTaskCreate(publisher_task, "Publisher task", PUBLISHER_TASK_STACK_SIZE, 
                               NULL, PUBLISHER_TASK_PRIORITY, &publisher_task_handle))
@@ -202,6 +209,7 @@ void mqtt_client_task(void *pvParameters)
                     }
                     if (publisher_task_handle != NULL)
                     {
+                        publisher_cleanup();
                         vTaskDelete(publisher_task_handle);
                     }
                     goto exit_cleanup;
@@ -270,15 +278,11 @@ static int wifi_connect(void)
             init_flag |= WIFI_CONNECTED;
             if (ip_address.version == CY_WCM_IP_VER_V4)
             {
-                printf("IPv4 Address Assigned: %d.%d.%d.%d\n\n", (uint8_t)ip_address.ip.v4,
-                       (uint8_t)(ip_address.ip.v4 >> 8), (uint8_t)(ip_address.ip.v4 >> 16),
-                       (uint8_t)(ip_address.ip.v4 >> 24));
+                printf("IPv4 Address Assigned: %s\n\n", ip4addr_ntoa((const ip4_addr_t *) &ip_address.ip.v4));
             }
             else if (ip_address.version == CY_WCM_IP_VER_V6)
             {
-                printf("IPv6 Address Assigned: %0X:%0X:%0X:%0X\n\n", (unsigned int)ip_address.ip.v6[0],
-                       (unsigned int)ip_address.ip.v6[1], (unsigned int)ip_address.ip.v6[2],
-                       (unsigned int)ip_address.ip.v6[3]);
+                printf("IPv6 Address Assigned: %s\n\n", ip6addr_ntoa((const ip6_addr_t *) &ip_address.ip.v6));
             }
             return EXIT_SUCCESS;
         }
