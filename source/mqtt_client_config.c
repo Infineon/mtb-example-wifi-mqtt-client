@@ -7,7 +7,7 @@
 * Related Document: See README.md
 *
 *******************************************************************************
-* (c) 2020, Cypress Semiconductor Corporation. All rights reserved.
+* (c) 2020-2021, Cypress Semiconductor Corporation. All rights reserved.
 *******************************************************************************
 * This software, including source code, documentation and related materials
 * ("Software"), is owned by Cypress Semiconductor Corporation or one of its
@@ -93,6 +93,7 @@ IotMqttNetworkInfo_t networkInfo =
 };
 #endif /* #if (MQTT_SECURE_CONNECTION) */
 
+#if ENABLE_LWT_MESSAGE
 /* Last Will and Testament (LWT) message structure. The MQTT broker will
  * publish the LWT message if this client disconnects unexpectedly.
  */
@@ -104,14 +105,19 @@ IotMqttPublishInfo_t willInfo =
     .pPayload = MQTT_WILL_MESSAGE,
     .payloadLength = (size_t)(sizeof(MQTT_WILL_MESSAGE) - 1)
 };
+#endif /* ENABLE_LWT_MESSAGE */
 
 /* MQTT connection information structure. */
 IotMqttConnectInfo_t connectionInfo =
 {
     .cleanSession = true,
-    .awsIotMqttMode = AWS_IOT_MQTT_MODE,
+    .awsIotMqttMode = (AWS_IOT_MQTT_MODE == 1),
     .keepAliveSeconds = MQTT_KEEP_ALIVE_SECONDS,
+    #if ENABLE_LWT_MESSAGE
     .pWillInfo = &willInfo,
+    #else
+    .pWillInfo = NULL,
+    #endif /* ENABLE_LWT_MESSAGE */
     .pUserName = NULL,
     .pPassword = NULL,
     .userNameLength = 0,
@@ -126,7 +132,7 @@ IotMqttConnectInfo_t connectionInfo =
 #endif
 
 /* Check if the macros are correctly configured for AWS IoT Broker. */
-#if (!MQTT_SECURE_CONNECTION && AWS_IOT_MQTT_MODE)
+#if ((MQTT_SECURE_CONNECTION != 1) && (AWS_IOT_MQTT_MODE == 1))
     #error "AWS IoT does not support unsecured connections!"
 #endif
 

@@ -7,26 +7,29 @@
 # which files to ignore in whatever form your VCS requires. If you do not check your
 # code into a VCS, you can ignore the .gitignore file.
 
-# ModusToolbox Libraries
-libs/*
-!libs/*.lib
+# ModusToolbox library repos or information about library dependencies
+libs/
 
 # Eclipse IDE for ModusToolbox files
 .metadata/
-.cyignore
+# .cyignore
 # .settings/
 # .cproject
 # .project
 # .mtbLaunchConfigs/
 
-# Eclipse IDE for ModusToolbox build output
+# ModusToolbox Configurator generated code
+GeneratedSource/
+
+# ModusToolbox build system output
 build/
 Debug/
 Release/
 *_build/
 
 # Visual Studio Code
-.vscode/*
+openocd.tcl
+.vscode/
 !.vscode/settings.json
 !.vscode/tasks.json
 !.vscode/launch.json

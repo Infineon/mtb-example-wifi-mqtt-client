@@ -7,7 +7,7 @@
 #
 ################################################################################
 # \copyright
-# Copyright 2018-2020 Cypress Semiconductor Corporation
+# Copyright 2018-2021 Cypress Semiconductor Corporation
 # SPDX-License-Identifier: Apache-2.0
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -29,17 +29,22 @@
 ################################################################################
 
 # Target board/hardware (BSP).
-# To change the target, use the Library manager ('make modlibs' from command line).
-# If TARGET is manually edited, ensure TARGET_<BSP>.lib with a valid URL exists
-# in the application, and run 'make getlibs' to fetch BSP contents.
+# To change the target, it is recommended to use the Library manager 
+# ('make modlibs' from command line), which will also update Eclipse IDE launch 
+# configurations. If TARGET is manually edited, ensure TARGET_<BSP>.mtb with a 
+# valid URL exists in the application, run 'make getlibs' to fetch BSP contents
+# and update or regenerate launch configurations for your IDE.
 TARGET=CY8CPROTO-062-4343W
 
 # Name of application (used to derive name of final linked file).
+# 
+# If APPNAME is edited, ensure to update or regenerate launch 
+# configurations for your IDE.
 APPNAME=mtb-example-anycloud-mqtt-client
 
 # Name of toolchain to use. Options include:
 #
-# GCC_ARM -- GCC 7.2.1, provided with ModusToolbox IDE
+# GCC_ARM -- GCC provided with ModusToolbox IDE
 # ARM     -- ARM Compiler (must be installed separately)
 # IAR     -- IAR Compiler (must be installed separately)
 #
@@ -51,11 +56,20 @@ TOOLCHAIN=GCC_ARM
 # Debug -- build with minimal optimizations, focus on debugging.
 # Release -- build with full optimizations
 # Custom -- build with custom configuration, set the optimization flag in CFLAGS
+# 
+# If CONFIG is manually edited, ensure to update or regenerate launch configurations 
+# for your IDE.
 CONFIG=Debug
 
 # If set to "true" or "1", display full command-lines when building.
 VERBOSE=
 
+# The MQTT Client library does not support secure connections to the Mosquitto
+# broker by default, because the server uses the SHA1 hashing algorithm which 
+# is considered  a weak message digest and is therefore not enabled by default.
+# However, if it is required to connect securely to the Mosquitto Broker set  
+# this macro to "true" or "1".
+ENABLE_SECURE_MOSQUITTO_BROKER_SUPPORT=0
 
 ################################################################################
 # Advanced Configuration
@@ -71,7 +85,7 @@ VERBOSE=
 # ... then code in directories named COMPONENT_foo and COMPONENT_bar will be
 # added to the build
 #
-COMPONENTS=FREERTOS LWIP MBEDTLS
+COMPONENTS=FREERTOS LWIP MBEDTLS RTOS_AWARE
 
 # Like COMPONENTS, but disable optional code that was enabled by default.
 DISABLE_COMPONENTS=
@@ -90,7 +104,13 @@ INCLUDES=./configs
 MBEDTLSFLAGS = MBEDTLS_USER_CONFIG_FILE='"mbedtls_user_config.h"'
 
 # Add additional defines to the build process (without a leading -D).
-DEFINES=$(MBEDTLSFLAGS) CYBSP_WIFI_CAPABLE CY_RETARGET_IO_CONVERT_LF_TO_CRLF CY_RTOS_AWARE
+DEFINES=$(MBEDTLSFLAGS) CYBSP_WIFI_CAPABLE CY_RETARGET_IO_CONVERT_LF_TO_CRLF 
+
+# Enable support for Mosquitto Broker based on 'ENABLE_SECURE_MOSQUITTO_BROKER_
+# SUPPORT' variable. See the MQTT Client library's README for more information.
+ifneq (,$(filter $(ENABLE_SECURE_MOSQUITTO_BROKER_SUPPORT),true 1))
+DEFINES+=CY_MQTT_ENABLE_SECURE_TEST_MOSQUITTO_SUPPORT 
+endif
 
 # CY8CPROTO-062-4343W board shares the same GPIO for the user button (USER BTN1)
 # and the CYW4343W host wake up pin. Since this example uses the GPIO for  
@@ -146,9 +166,18 @@ POSTBUILD=
 # This controls where automatic source code discovery looks for code.
 CY_APP_PATH=
 
-# Relative path to the "base" library. It provides the core makefile build
-# infrastructure.
-CY_BASELIB_PATH=libs/psoc6make
+# Relative path to the shared repo location.
+#
+# All .mtb files have the format, <URI>#<COMMIT>#<LOCATION>. If the <LOCATION> field 
+# begins with $$ASSET_REPO$$, then the repo is deposited in the path specified by 
+# the CY_GETLIBS_SHARED_PATH variable. The default location is one directory level 
+# above the current app directory.
+# This is used with CY_GETLIBS_SHARED_NAME variable, which specifies the directory name.
+CY_GETLIBS_SHARED_PATH=../
+
+# Directory name of the shared repo location.
+#
+CY_GETLIBS_SHARED_NAME=mtb_shared
 
 # Absolute path to the compiler's "bin" directory.
 #
@@ -167,7 +196,7 @@ CY_TOOLS_PATHS ?= $(wildcard \
 
 # If you install ModusToolbox IDE in a custom location, add the path to its
 # "tools_X.Y" folder (where X and Y are the version number of the tools
-# folder).
+# folder). Make sure you use forward slashes.
 CY_TOOLS_PATHS+=
 
 # Default to the newest installed tools folder, or the users override (if it's
@@ -175,7 +204,7 @@ CY_TOOLS_PATHS+=
 CY_TOOLS_DIR=$(lastword $(sort $(wildcard $(CY_TOOLS_PATHS))))
 
 ifeq ($(CY_TOOLS_DIR),)
-$(error Unable to find any of the available CY_TOOLS_PATHS -- $(CY_TOOLS_PATHS))
+$(error Unable to find any of the available CY_TOOLS_PATHS -- $(CY_TOOLS_PATHS). On Windows, use forward slashes.)
 endif
 
 $(info Tools Directory: $(CY_TOOLS_DIR))

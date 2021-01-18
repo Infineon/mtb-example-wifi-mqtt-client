@@ -7,7 +7,7 @@
 * Related Document: See README.md
 *
 *******************************************************************************
-* (c) 2020, Cypress Semiconductor Corporation. All rights reserved.
+* (c) 2020-2021, Cypress Semiconductor Corporation. All rights reserved.
 *******************************************************************************
 * This software, including source code, documentation and related materials
 * ("Software"), is owned by Cypress Semiconductor Corporation or one of its
@@ -50,29 +50,34 @@
 #define MQTT_BROKER_ADDRESS               "MY_AWS_IOT_ENDPOINT_ADDRESS"
 #define MQTT_PORT                         8883
 
-/* Set this macro to 'true' if the MQTT Broker being used is hosted by AWS IoT 
- * Core service, else 'false'.
+/* Set this macro to 1 if the MQTT Broker being used is hosted by AWS IoT 
+ * Core service, else 0.
  */
-#define AWS_IOT_MQTT_MODE                 ( true )
+#define AWS_IOT_MQTT_MODE                 ( 1 )
 
-/* Set this macro to 'true' if a secure connection to the MQTT Broker is  
- * required to be established, else 'false'.
+/* Set this macro to 1 if a secure (TLS) connection to the MQTT Broker is  
+ * required to be established, else 0.
  */
-#define MQTT_SECURE_CONNECTION            ( true )
+#define MQTT_SECURE_CONNECTION            ( 1 )
 
 /* The MQTT topic on which the LED control messages will be published and 
  * subscribed.
  */
 #define MQTT_TOPIC                        "ledstatus"
 
-/* Configuration for the 'Will message' that will be published by the MQTT 
- * broker if the MQTT connection is unexpectedly closed. This configuration is 
- * sent to the MQTT broker during MQTT connect operation and the MQTT broker
- * will publish the Will message on the Will topic when it recognizes an 
- * unexpected disconnection from the client.
+/* Configuration for the 'Last Will and Testament (LWT)'. It is an MQTT message 
+ * that will be published by the MQTT broker if the MQTT connection is 
+ * unexpectedly closed. This configuration is sent to the MQTT broker during 
+ * MQTT connect operation and the MQTT broker will publish the Will message on 
+ * the Will topic when it recognizes an unexpected disconnection from the client.
+ * 
+ * If you want to use the last will message, set this macro to 1, else 0.
  */
-#define MQTT_WILL_TOPIC_NAME              MQTT_TOPIC "/will"
-#define MQTT_WILL_MESSAGE                 ("MQTT client unexpectedly disconnected!")
+#define ENABLE_LWT_MESSAGE                ( 0 )
+#if ENABLE_LWT_MESSAGE
+    #define MQTT_WILL_TOPIC_NAME          MQTT_TOPIC "/will"
+    #define MQTT_WILL_MESSAGE             ("MQTT client unexpectedly disconnected!")
+#endif
 
 /* Set the QoS that is associated with the MQTT publish, and subscribe messages.
  * Valid choices are 0, and 1. The MQTT library currently does not support 
@@ -80,9 +85,7 @@
  */
 #define MQTT_MESSAGES_QOS                 ( 1 )
 
-/* Configure the MQTT username and password that can be used for AWS IoT  
- * Enhanced Custom Authentication.
- */
+/* Configure the user credentials to be sent as part of MQTT CONNECT packet */
 #define MQTT_USERNAME                     "User"
 #define MQTT_PASSWORD                     ""
 
@@ -92,8 +95,16 @@
 /* The keep-alive interval in seconds used for MQTT ping request. */
 #define MQTT_KEEP_ALIVE_SECONDS           ( 60 )
 
-/* MQTT client identifier prefix. */
-#define MQTT_CLIENT_IDENTIFIER_PREFIX     "psoc6-mqtt-client"
+/* A unique client identifier to be used for every MQTT connection. */
+#define MQTT_CLIENT_IDENTIFIER            "psoc6-mqtt-client"
+
+/* Every active MQTT connection must have a unique client identifier. If you 
+ * are using the above 'MQTT_CLIENT_IDENTIFIER' as client ID for multiple MQTT 
+ * connections simultaneously, set this macro to 1. The device will then
+ * generate a unique client identifier by appending a timestamp to the 
+ * 'MQTT_CLIENT_IDENTIFIER' string. Example: 'psoc6-mqtt-client5927'
+ */
+#define GENERATE_UNIQUE_CLIENT_ID         ( 1 )
 
 /* The longest client identifier that an MQTT server must accept (as defined
  * by the MQTT 3.1.1 spec) is 23 characters. Add 1 to include the length of the

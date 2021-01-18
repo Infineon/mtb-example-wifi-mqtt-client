@@ -10,7 +10,7 @@
 * Related Document: See README.md
 *
 *******************************************************************************
-* (c) 2020, Cypress Semiconductor Corporation. All rights reserved.
+* (c) 2020-2021, Cypress Semiconductor Corporation. All rights reserved.
 *******************************************************************************
 * This software, including source code, documentation and related materials
 * ("Software"), is owned by Cypress Semiconductor Corporation or one of its
@@ -122,9 +122,12 @@ uint32_t init_flag;
 *******************************************************************************/
 static int wifi_connect(void);
 static int mqtt_connect(void);
-static int mqtt_get_unique_client_identifier(char *mqtt_client_identifier);
 static void mqtt_disconnect_callback(void *pCallbackContext,
                                      IotMqttCallbackParam_t *pCallbackParam);
+#if GENERATE_UNIQUE_CLIENT_ID
+static int mqtt_get_unique_client_identifier(char *mqtt_client_identifier);
+#endif /* GENERATE_UNIQUE_CLIENT_ID */
+
 static void cleanup(void);
 
 /******************************************************************************
@@ -317,7 +320,7 @@ static int mqtt_connect(void)
     int result = EXIT_SUCCESS;
 
     /* MQTT client identifier string. */
-    char mqtt_client_identifier[MQTT_CLIENT_IDENTIFIER_MAX_LEN] = {0};
+    char mqtt_client_identifier[MQTT_CLIENT_IDENTIFIER_MAX_LEN] = MQTT_CLIENT_IDENTIFIER;
 
     if (!IotSdk_Init())
     {
@@ -336,24 +339,26 @@ static int mqtt_connect(void)
     CHECK_RESULT(result, LIBS_INITIALIZED, "MQTT library initialization failed!\n\n");
     printf("MQTT library initialization successful.\n\n");
 
-    /* Configure the user credentials for the AWS IoT Enhanced Custom 
-     * Authentication.
-     */
-    if ((connectionInfo.awsIotMqttMode) && (strlen(MQTT_USERNAME) > 0))
+    /* Configure the user credentials as a part of MQTT Connect packet */
+    if (strlen(MQTT_USERNAME) > 0)
     {
         connectionInfo.pUserName = MQTT_USERNAME;
         connectionInfo.pPassword = MQTT_PASSWORD;
-        connectionInfo.userNameLength = sizeof(MQTT_USERNAME);
-        connectionInfo.passwordLength = sizeof(MQTT_PASSWORD);
+        connectionInfo.userNameLength = sizeof(MQTT_USERNAME) - 1;
+        connectionInfo.passwordLength = sizeof(MQTT_PASSWORD) - 1;
     }
 
     /* Configure the network interface and callback function for disconnection. */
     networkInfo.pNetworkInterface = IOT_NETWORK_INTERFACE_CY_SECURE_SOCKETS;
     networkInfo.disconnectCallback.function = mqtt_disconnect_callback;
 
-    /* Every active MQTT connection must have a unique client identifier. */
+    /* Generate a unique client identifier with 'MQTT_CLIENT_IDENTIFIER' string 
+     * as a prefix based on `GENERATE_UNIQUE_CLIENT_ID` macro setting.
+     */
+    #if GENERATE_UNIQUE_CLIENT_ID
     result = mqtt_get_unique_client_identifier(mqtt_client_identifier);
     CHECK_RESULT(result, 0, "Failed to generate unique client identifier for the MQTT client!\n");
+    #endif /* GENERATE_UNIQUE_CLIENT_ID */
 
     /* Set the client identifier buffer and length. */
     connectionInfo.pClientIdentifier = mqtt_client_identifier;
@@ -398,7 +403,6 @@ static void mqtt_disconnect_callback(void *pCallbackContext,
 
     /* To avoid compiler warnings */
     (void)pCallbackContext;
-    (void)pCallbackParam;
 
     /* Inform the MQTT client task about the disconnection except when the MQTT 
      * client has invoked the MQTT disconnect function.
@@ -411,12 +415,13 @@ static void mqtt_disconnect_callback(void *pCallbackContext,
     }
 }
 
+#if GENERATE_UNIQUE_CLIENT_ID
 /******************************************************************************
  * Function Name: mqtt_get_unique_client_identifier
  ******************************************************************************
  * Summary:
  *  Function that generates unique client identifier for the MQTT client by
- *  appending a timestamp to a common prefix (CLIENT_IDENTIFIER_PREFIX).
+ *  appending a timestamp to a common prefix (MQTT_CLIENT_IDENTIFIER).
  *
  * Parameters:
  *  char *mqtt_client_identifier : Pointer to the string that stores the 
@@ -434,7 +439,7 @@ static int mqtt_get_unique_client_identifier(char *mqtt_client_identifier)
     /* Check for errors from snprintf. */
     if (0 > snprintf(mqtt_client_identifier,
                      MQTT_CLIENT_IDENTIFIER_MAX_LEN,
-                     MQTT_CLIENT_IDENTIFIER_PREFIX "%lu",
+                     MQTT_CLIENT_IDENTIFIER "%lu",
                      (long unsigned int)IotClock_GetTimeMs()))
     {
         status = EXIT_FAILURE;
@@ -442,6 +447,7 @@ static int mqtt_get_unique_client_identifier(char *mqtt_client_identifier)
 
     return status;
 }
+#endif /* GENERATE_UNIQUE_CLIENT_ID */
 
 /******************************************************************************
  * Function Name: cleanup
