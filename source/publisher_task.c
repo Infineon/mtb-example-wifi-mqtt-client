@@ -1,31 +1,33 @@
 /******************************************************************************
 * File Name:   publisher_task.c
 *
-* Description: This file contains the task that initializes the user button
-*              GPIO, configures the ISR, and publishes MQTT messages on the 
-*              topic 'MQTT_TOPIC' to control a device that is actuated by the
+* Description: This file contains the task that sets up the user button GPIO 
+*              for the publisher and publishes MQTT messages on the topic
+*              'MQTT_PUB_TOPIC' to control a device that is actuated by the
 *              subscriber task. The file also contains the ISR that notifies
 *              the publisher task about the new device state to be published.
 *
 * Related Document: See README.md
 *
-*******************************************************************************
-* (c) 2020-2021, Cypress Semiconductor Corporation. All rights reserved.
-*******************************************************************************
-* This software, including source code, documentation and related materials
-* ("Software"), is owned by Cypress Semiconductor Corporation or one of its
-* subsidiaries ("Cypress") and is protected by and subject to worldwide patent
-* protection (United States and foreign), United States copyright laws and
-* international treaty provisions. Therefore, you may use this Software only
-* as provided in the license agreement accompanying the software package from
-* which you obtained this Software ("EULA").
 *
+*******************************************************************************
+* Copyright 2020-2021, Cypress Semiconductor Corporation (an Infineon company) or
+* an affiliate of Cypress Semiconductor Corporation.  All rights reserved.
+*
+* This software, including source code, documentation and related
+* materials ("Software") is owned by Cypress Semiconductor Corporation
+* or one of its affiliates ("Cypress") and is protected by and subject to
+* worldwide patent protection (United States and foreign),
+* United States copyright laws and international treaty provisions.
+* Therefore, you may use this Software only as provided in the license
+* agreement accompanying the software package from which you
+* obtained this Software ("EULA").
 * If no EULA applies, Cypress hereby grants you a personal, non-exclusive,
-* non-transferable license to copy, modify, and compile the Software source
-* code solely for use in connection with Cypress's integrated circuit products.
-* Any reproduction, modification, translation, compilation, or representation
-* of this Software except as specified above is prohibited without the express
-* written permission of Cypress.
+* non-transferable license to copy, modify, and compile the Software
+* source code solely for use in connection with Cypress's
+* integrated circuit products.  Any reproduction, modification, translation,
+* compilation, or representation of this Software except as specified
+* above is prohibited without the express written permission of Cypress.
 *
 * Disclaimer: THIS SOFTWARE IS PROVIDED AS-IS, WITH NO WARRANTY OF ANY KIND,
 * EXPRESS OR IMPLIED, INCLUDING, BUT NOT LIMITED TO, NONINFRINGEMENT, IMPLIED
@@ -36,9 +38,9 @@
 * not authorize its products for use in any products where a malfunction or
 * failure of the Cypress product may reasonably be expected to result in
 * significant property damage, injury or death ("High Risk Product"). By
-* including Cypress's product in a High Risk Product, the manufacturer of such
-* system or application assumes all risk of such use and in doing so agrees to
-* indemnify Cypress against all liability.
+* including Cypress's product in a High Risk Product, the manufacturer
+* of such system or application assumes all risk of such use and in doing
+* so agrees to indemnify Cypress against all liability.
 *******************************************************************************/
 
 #include "cyhal.h"
@@ -54,8 +56,8 @@
 #include "mqtt_client_config.h"
 
 /* Middleware libraries */
+#include "cy_mqtt_api.h"
 #include "cy_retarget_io.h"
-#include "iot_mqtt.h"
 
 /******************************************************************************
 * Macros
@@ -71,34 +73,45 @@
  */
 #define PUBLISH_RETRY_MS                (1000)
 
+/* Queue length of a message queue that is used to communicate with the 
+ * publisher task.
+ */
+#define PUBLISHER_TASK_QUEUE_LENGTH     (3u)
+
 /******************************************************************************
 * Global Variables
 *******************************************************************************/
 /* FreeRTOS task handle for this task. */
 TaskHandle_t publisher_task_handle;
 
+/* Handle of the queue holding the commands for the publisher task */
+QueueHandle_t publisher_task_q;
+
 /* Structure to store publish message information. */
-IotMqttPublishInfo_t publishInfo =
+cy_mqtt_publish_info_t publish_info =
 {
-    .qos = (IotMqttQos_t) MQTT_MESSAGES_QOS,
-    .pTopicName = MQTT_TOPIC,
-    .topicNameLength = (sizeof(MQTT_TOPIC) - 1),
-    .retryMs = PUBLISH_RETRY_MS,
-    .retryLimit = PUBLISH_RETRY_LIMIT
+    .qos = (cy_mqtt_qos_t) MQTT_MESSAGES_QOS,
+    .topic = MQTT_PUB_TOPIC,
+    .topic_len = (sizeof(MQTT_PUB_TOPIC) - 1),
+    .retain = false,
+    .dup = false
 };
 
 /******************************************************************************
 * Function Prototypes
 *******************************************************************************/
-void isr_button_press(void *callback_arg, cyhal_gpio_event_t event);
+static void publisher_init(void);
+static void publisher_deinit(void);
+static void isr_button_press(void *callback_arg, cyhal_gpio_event_t event);
 
 /******************************************************************************
  * Function Name: publisher_task
  ******************************************************************************
  * Summary:
- *  Task that handles initialization of the user button GPIO, configuration of
- *  ISR, and publishing of MQTT messages to control the device that is actuated
- *  by the subscriber task.
+ *  Task that sets up the user button GPIO for the publisher and publishes 
+ *  MQTT messages to the broker. The user button init and deinit operations,
+ *  and the MQTT publish operation is performed based on commands sent by other
+ *  tasks and callbacks over a message queue.
  *
  * Parameters:
  *  void *pvParameters : Task parameter defined during task creation (unused)
@@ -110,19 +123,87 @@ void isr_button_press(void *callback_arg, cyhal_gpio_event_t event);
 void publisher_task(void *pvParameters)
 {
     /* Status variable */
-    int result;
+    cy_rslt_t result;
 
-    /* Variable to receive new device state from the user button ISR. */
-    uint32_t publish_device_state;
+    publisher_data_t publisher_q_data;
 
-    /* Status of MQTT publish operation that will be communicated to MQTT 
-     * client task using a message queue in case of failure during publish.
-     */
-    mqtt_result_t mqtt_publish_status = MQTT_PUBLISH_FAILURE;
+    /* Command to the MQTT client task */
+    mqtt_task_cmd_t mqtt_task_cmd;
 
     /* To avoid compiler warnings */
-    (void)pvParameters;
+    (void) pvParameters;
 
+    /* Initialize and set-up the user button GPIO. */
+    publisher_init();
+
+    /* Create a message queue to communicate with other tasks and callbacks. */
+    publisher_task_q = xQueueCreate(PUBLISHER_TASK_QUEUE_LENGTH, sizeof(publisher_data_t));
+
+    while (true)
+    {
+        /* Wait for commands from other tasks and callbacks. */
+        if (pdTRUE == xQueueReceive(publisher_task_q, &publisher_q_data, portMAX_DELAY))
+        {
+            switch(publisher_q_data.cmd)
+            {
+                case PUBLISHER_INIT:
+                {
+                    /* Initialize and set-up the user button GPIO. */
+                    publisher_init();
+                    break;
+                }
+
+                case PUBLISHER_DEINIT:
+                {
+                    /* Deinit the user button GPIO and corresponding interrupt. */
+                    publisher_deinit();
+                    break;
+                }
+
+                case PUBLISH_MQTT_MSG:
+                {
+                    /* Publish the data received over the message queue. */
+                    publish_info.payload = publisher_q_data.data;
+                    publish_info.payload_len = strlen(publish_info.payload);
+
+                    printf("  Publisher: Publishing '%s' on the topic '%s'\n\n",
+                           (char *) publish_info.payload, publish_info.topic);
+
+                    result = cy_mqtt_publish(mqtt_connection, &publish_info);
+
+                    if (result != CY_RSLT_SUCCESS)
+                    {
+                        printf("  Publisher: MQTT Publish failed with error 0x%0X.\n\n", (int)result);
+
+                        /* Communicate the publish failure with the the MQTT 
+                         * client task.
+                         */
+                        mqtt_task_cmd = HANDLE_MQTT_PUBLISH_FAILURE;
+                        xQueueSend(mqtt_task_q, &mqtt_task_cmd, portMAX_DELAY);
+                    }
+                    break;
+                }
+            }
+        }
+    }
+}
+
+/******************************************************************************
+ * Function Name: publisher_init
+ ******************************************************************************
+ * Summary:
+ *  Function that initializes and sets-up the user button GPIO pin along with  
+ *  its interrupt.
+ * 
+ * Parameters:
+ *  void
+ *
+ * Return:
+ *  void
+ *
+ ******************************************************************************/
+static void publisher_init(void)
+{
     /* Initialize the user button GPIO and register interrupt on falling edge. */
     cyhal_gpio_init(CYBSP_USER_BTN, CYHAL_GPIO_DIR_INPUT,
                     CYHAL_GPIO_DRIVE_PULLUP, CYBSP_BTN_OFF);
@@ -131,44 +212,30 @@ void publisher_task(void *pvParameters)
                             USER_BTN_INTR_PRIORITY, true);
     
     printf("Press the user button (SW2) to publish \"%s\"/\"%s\" on the topic '%s'...\n\n", 
-           MQTT_DEVICE_ON_MESSAGE, MQTT_DEVICE_OFF_MESSAGE, publishInfo.pTopicName);
+           MQTT_DEVICE_ON_MESSAGE, MQTT_DEVICE_OFF_MESSAGE, publish_info.topic);
+}
 
-    while (true)
-    {
-        /* Wait for notification from the User Button ISR. */
-        xTaskNotifyWait(0, 0, &publish_device_state, portMAX_DELAY);
-
-        /* Assign the publish message payload according to received device state. */
-        publishInfo.pPayload = MQTT_DEVICE_OFF_MESSAGE;
-        
-        if (publish_device_state == DEVICE_ON_STATE)
-        {
-            publishInfo.pPayload = MQTT_DEVICE_ON_MESSAGE;
-        }
-        
-        publishInfo.payloadLength = strlen(publishInfo.pPayload);
-
-        printf("Publishing '%s' on the topic '%s'\n\n",
-               (char *)publishInfo.pPayload,
-               publishInfo.pTopicName);
-
-        /* Publish the MQTT message with the configured settings. */
-        result = IotMqtt_PublishSync(mqttConnection,
-                                     &publishInfo,
-                                     0,
-                                     MQTT_TIMEOUT_MS);
-
-        if (result != IOT_MQTT_SUCCESS)
-        {
-            /* Inform the MQTT client task about the publish failure and suspend
-             * the task for it to be killed by the MQTT client task later.
-             */
-            printf("MQTT Publish failed with error '%s'.\n\n",
-                   IotMqtt_strerror((IotMqttError_t) result));
-            xQueueOverwrite(mqtt_status_q, &mqtt_publish_status);
-            vTaskSuspend( NULL );
-        }
-    }
+/******************************************************************************
+ * Function Name: publisher_deinit
+ ******************************************************************************
+ * Summary:
+ *  Cleanup function for the publisher task that disables the user button  
+ *  interrupt and deinits the user button GPIO pin.
+ *
+ * Parameters:
+ *  void
+ *
+ * Return:
+ *  void
+ *
+ ******************************************************************************/
+static void publisher_deinit(void)
+{
+    /* Deregister the ISR and disable the interrupt on the user button. */
+    cyhal_gpio_register_callback(CYBSP_USER_BTN, NULL, NULL);
+    cyhal_gpio_enable_event(CYBSP_USER_BTN, CYHAL_GPIO_IRQ_FALL,
+                            USER_BTN_INTR_PRIORITY, false);
+    cyhal_gpio_free(CYBSP_USER_BTN);
 }
 
 /******************************************************************************
@@ -176,8 +243,9 @@ void publisher_task(void *pvParameters)
  ******************************************************************************
  * Summary:
  *  GPIO interrupt service routine. This function detects button
- *  presses and sends task notifications to the publisher task about the new 
- *  device state that needs to be published.
+ *  presses and sends the publish command along with the data to be published 
+ *  to the publisher task over a message queue. Based on the current device 
+ *  state, the publish data is set so that the device state gets toggled.
  *
  * Parameters:
  *  void *callback_arg : pointer to variable passed to the ISR (unused)
@@ -187,53 +255,31 @@ void publisher_task(void *pvParameters)
  *  void
  *
  ******************************************************************************/
-void isr_button_press(void *callback_arg, cyhal_gpio_event_t event)
+static void isr_button_press(void *callback_arg, cyhal_gpio_event_t event)
 {
     BaseType_t xHigherPriorityTaskWoken = pdFALSE;
-    uint32_t new_device_state;
+    publisher_data_t publisher_q_data;
 
     /* To avoid compiler warnings */
     (void) callback_arg;
     (void) event;
 
-    /* Toggle the device state. */
+    /* Assign the publish command to be sent to the publisher task. */
+    publisher_q_data.cmd = PUBLISH_MQTT_MSG;
+
+    /* Assign the publish message payload so that the device state toggles. */
     if (current_device_state == DEVICE_ON_STATE)
     {
-        new_device_state = DEVICE_OFF_STATE;
+        publisher_q_data.data = (char *)MQTT_DEVICE_OFF_MESSAGE;
     }
     else
     {
-        new_device_state = DEVICE_ON_STATE;
+        publisher_q_data.data = (char *)MQTT_DEVICE_ON_MESSAGE;
     }
 
-    /* Notify the publisher task about the new state to be published. */
-    xTaskNotifyFromISR(publisher_task_handle, new_device_state, eSetValueWithoutOverwrite,
-                       &xHigherPriorityTaskWoken);
-
+    /* Send the command and data to publisher task over the queue */
+    xQueueSendFromISR(publisher_task_q, &publisher_q_data, &xHigherPriorityTaskWoken);
     portYIELD_FROM_ISR(xHigherPriorityTaskWoken);
-}
-
-/******************************************************************************
- * Function Name: publisher_cleanup
- ******************************************************************************
- * Summary:
- *  Cleanup function for the publisher task that disables the user button  
- *  interrupt. This operation needs to be necessarily performed before deleting  
- *  the publisher task.
- *
- * Parameters:
- *  void
- *
- * Return:
- *  void
- *
- ******************************************************************************/
-void publisher_cleanup(void)
-{
-    /* Deregister the ISR and disable the interrupt on the user button. */
-    cyhal_gpio_register_callback(CYBSP_USER_BTN, NULL, NULL);
-    cyhal_gpio_enable_event(CYBSP_USER_BTN, CYHAL_GPIO_IRQ_FALL,
-                            USER_BTN_INTR_PRIORITY, false);
 }
 
 /* [] END OF FILE */

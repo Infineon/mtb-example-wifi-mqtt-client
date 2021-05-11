@@ -7,15 +7,15 @@
 #
 ################################################################################
 # \copyright
-# Copyright 2018-2021 Cypress Semiconductor Corporation
+# Copyright 2018-2021, Cypress Semiconductor Corporation (an Infineon company)
 # SPDX-License-Identifier: Apache-2.0
-#
+# 
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
-#
+# 
 #     http://www.apache.org/licenses/LICENSE-2.0
-#
+# 
 # Unless required by applicable law or agreed to in writing, software
 # distributed under the License is distributed on an "AS IS" BASIS,
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -29,16 +29,16 @@
 ################################################################################
 
 # Target board/hardware (BSP).
-# To change the target, it is recommended to use the Library manager 
-# ('make modlibs' from command line), which will also update Eclipse IDE launch 
-# configurations. If TARGET is manually edited, ensure TARGET_<BSP>.mtb with a 
+# To change the target, it is recommended to use the Library manager
+# ('make modlibs' from command line), which will also update Eclipse IDE launch
+# configurations. If TARGET is manually edited, ensure TARGET_<BSP>.mtb with a
 # valid URL exists in the application, run 'make getlibs' to fetch BSP contents
 # and update or regenerate launch configurations for your IDE.
 TARGET=CY8CPROTO-062-4343W
 
 # Name of application (used to derive name of final linked file).
-# 
-# If APPNAME is edited, ensure to update or regenerate launch 
+#
+# If APPNAME is edited, ensure to update or regenerate launch
 # configurations for your IDE.
 APPNAME=mtb-example-anycloud-mqtt-client
 
@@ -56,20 +56,13 @@ TOOLCHAIN=GCC_ARM
 # Debug -- build with minimal optimizations, focus on debugging.
 # Release -- build with full optimizations
 # Custom -- build with custom configuration, set the optimization flag in CFLAGS
-# 
-# If CONFIG is manually edited, ensure to update or regenerate launch configurations 
+#
+# If CONFIG is manually edited, ensure to update or regenerate launch configurations
 # for your IDE.
 CONFIG=Debug
 
 # If set to "true" or "1", display full command-lines when building.
 VERBOSE=
-
-# The MQTT Client library does not support secure connections to the Mosquitto
-# broker by default, because the server uses the SHA1 hashing algorithm which 
-# is considered  a weak message digest and is therefore not enabled by default.
-# However, if it is required to connect securely to the Mosquitto Broker set  
-# this macro to "true" or "1".
-ENABLE_SECURE_MOSQUITTO_BROKER_SUPPORT=0
 
 ################################################################################
 # Advanced Configuration
@@ -85,7 +78,7 @@ ENABLE_SECURE_MOSQUITTO_BROKER_SUPPORT=0
 # ... then code in directories named COMPONENT_foo and COMPONENT_bar will be
 # added to the build
 #
-COMPONENTS=FREERTOS LWIP MBEDTLS RTOS_AWARE
+COMPONENTS=FREERTOS LWIP MBEDTLS SECURE_SOCKETS RTOS_AWARE 
 
 # Like COMPONENTS, but disable optional code that was enabled by default.
 DISABLE_COMPONENTS=
@@ -105,12 +98,6 @@ MBEDTLSFLAGS = MBEDTLS_USER_CONFIG_FILE='"mbedtls_user_config.h"'
 
 # Add additional defines to the build process (without a leading -D).
 DEFINES=$(MBEDTLSFLAGS) CYBSP_WIFI_CAPABLE CY_RETARGET_IO_CONVERT_LF_TO_CRLF 
-
-# Enable support for Mosquitto Broker based on 'ENABLE_SECURE_MOSQUITTO_BROKER_
-# SUPPORT' variable. See the MQTT Client library's README for more information.
-ifneq (,$(filter $(ENABLE_SECURE_MOSQUITTO_BROKER_SUPPORT),true 1))
-DEFINES+=CY_MQTT_ENABLE_SECURE_TEST_MOSQUITTO_SUPPORT 
-endif
 
 # CY8CPROTO-062-4343W board shares the same GPIO for the user button (USER BTN1)
 # and the CYW4343W host wake up pin. Since this example uses the GPIO for  
@@ -168,9 +155,9 @@ CY_APP_PATH=
 
 # Relative path to the shared repo location.
 #
-# All .mtb files have the format, <URI>#<COMMIT>#<LOCATION>. If the <LOCATION> field 
-# begins with $$ASSET_REPO$$, then the repo is deposited in the path specified by 
-# the CY_GETLIBS_SHARED_PATH variable. The default location is one directory level 
+# All .mtb files have the format, <URI>#<COMMIT>#<LOCATION>. If the <LOCATION> field
+# begins with $$ASSET_REPO$$, then the repo is deposited in the path specified by
+# the CY_GETLIBS_SHARED_PATH variable. The default location is one directory level
 # above the current app directory.
 # This is used with CY_GETLIBS_SHARED_NAME variable, which specifies the directory name.
 CY_GETLIBS_SHARED_PATH=../

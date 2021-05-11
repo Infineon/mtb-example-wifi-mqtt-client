@@ -1,8 +1,7 @@
 /******************************************************************************
-* File Name:   wifi_config.h
+* File Name:   core_mqtt_config.h
 *
-* Description: This file contains the configuration macros required for the
-*              Wi-Fi connection.
+* Description: This file contains the configuration macros for the MQTT library.
 *
 * Related Document: See README.md
 *
@@ -40,29 +39,44 @@
 * so agrees to indemnify Cypress against all liability.
 *******************************************************************************/
 
-#ifndef WIFI_CONFIG_H_
-#define WIFI_CONFIG_H_
+#ifndef CORE_MQTT_CONFIG_H_
+#define CORE_MQTT_CONFIG_H_
 
-#include "cy_wcm.h"
-
-/*******************************************************************************
-* Macros
-********************************************************************************/
-/* SSID of the Wi-Fi Access Point to which the MQTT client connects. */
-#define WIFI_SSID                         "MY_WIFI_SSID"
-
-/* Passkey of the above mentioned Wi-Fi SSID. */
-#define WIFI_PASSWORD                     "MY_WIFI_PASSWORD"
-
-/* Security type of the Wi-Fi access point. See 'cy_wcm_security_t' structure
- * in "cy_wcm.h" for more details.
+/**
+ * @brief Determines the maximum number of MQTT PUBLISH messages, pending
+ * acknowledgement at a time, that are supported for incoming and outgoing
+ * direction of messages, separately.
+ *
+ * QoS 1 and 2 MQTT PUBLISH packets require acknowledgement from the server before
+ * they can be completed. While they are awaiting the acknowledgement, the
+ * client must maintain information about their state. The value of this
+ * macro sets the limit on how many simultaneous PUBLISH states an MQTT
+ * context maintains, separately, for both incoming and outgoing direction of
+ * PUBLISH packets.
+ *
+ * @note This definition must exist in order to compile. 10U is a typical value
+ * used in the MQTT demos.
  */
-#define WIFI_SECURITY                     CY_WCM_SECURITY_WPA2_AES_PSK
+#define MQTT_STATE_ARRAY_MAX_COUNT              ( 10U )
 
-/* Maximum Wi-Fi re-connection limit. */
-#define MAX_WIFI_CONN_RETRIES             (120u)
+/**
+ * @brief Retry the count for reading CONNACK from the network.
+ *
+ * MQTT_MAX_CONNACK_RECEIVE_RETRY_COUNT will be used only when the
+ * timeoutMs parameter of #MQTT_Connect() is passed as 0. The transport
+ * receive for CONNACK will be retried MQTT_MAX_CONNACK_RECEIVE_RETRY_COUNT
+ * times before timing out. A value of 0 for this config will cause the
+ * transport receive for CONNACK to be invoked only once.
+ */
+#define MQTT_MAX_CONNACK_RECEIVE_RETRY_COUNT    ( 2U )
 
-/* Wi-Fi re-connection time interval in milliseconds. */
-#define WIFI_CONN_RETRY_INTERVAL_MS       (5000)
+/**
+ * @brief Number of milliseconds to wait for a ping response to a ping
+ * request as part of the keepalive mechanism.
+ *
+ * If a ping response is not received before this timeout,
+ * #MQTT_ProcessLoop will return #MQTTKeepAliveTimeout.
+ */
+#define MQTT_PINGRESP_TIMEOUT_MS                ( 5000U )
 
-#endif /* WIFI_CONFIG_H_ */
+#endif /* ifndef CORE_MQTT_CONFIG_H_ */

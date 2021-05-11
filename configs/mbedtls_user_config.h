@@ -1,5 +1,5 @@
 /**
- * \file mbedtls_user_config.h
+ * \file config.h
  *
  * \brief Configuration options (set of defines)
  *
@@ -784,23 +784,5 @@
  * Uncomment to get errors on using deprecated functions and features.
  */
 #define MBEDTLS_DEPRECATED_REMOVED
-
-/**
- * Allow SHA-1 in the default TLS configuration for certificate signing if 
- * enabled in the application Makefile.
- * 
- * Without this build-time option, SHA-1 support must be activated explicitly
- * through mbedtls_ssl_conf_cert_profile. Turning on this option is not
- * recommended because of it is possible to generate SHA-1 collisions, however
- * this may be safe for legacy infrastructure where additional controls apply.
- *
- * \warning   SHA-1 is considered a weak message digest and its use constitutes
- *            a security risk. If possible, we recommend avoiding dependencies
- *            on it, and considering stronger message digests instead.
- *
- */
-#ifdef CY_MQTT_ENABLE_SECURE_TEST_MOSQUITTO_SUPPORT
-    #define MBEDTLS_TLS_DEFAULT_ALLOW_SHA1_IN_CERTIFICATES
-#endif
 
 #endif /* MBEDTLS_USER_CONFIG_HEADER */
