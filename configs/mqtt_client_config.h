@@ -47,7 +47,7 @@
 * Macros
 ********************************************************************************/
 /* MQTT Broker/Server address and port used for the MQTT connection. */
-#define MQTT_BROKER_ADDRESS               "MY_AWS_IOT_ENDPOINT_ADDRESS"
+#define MQTT_BROKER_ADDRESS               "MY_MQTT_BROKER_ADDRESS"
 #define MQTT_PORT                         8883
 
 /* Set this macro to 1 if the MQTT Broker being used is hosted by AWS IoT 
