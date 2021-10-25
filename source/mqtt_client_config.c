@@ -115,7 +115,7 @@ cy_awsport_ssl_credentials_t *security_info = &credentials;
 
 #else
 /* Pointer to the security details of the MQTT connection. */
-struct cy_awsport_ssl_credentials_t *security_info = NULL;
+cy_awsport_ssl_credentials_t *security_info = NULL;
 #endif /* #if (MQTT_SECURE_CONNECTION) */
 
 #if ENABLE_LWT_MESSAGE

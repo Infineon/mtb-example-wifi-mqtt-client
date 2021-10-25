@@ -1,5 +1,5 @@
 /******************************************************************************
-* File Name:   wifi_config.h
+* File Name: wifi_config.h
 *
 * Description: This file contains the configuration macros required for the
 *              Wi-Fi connection.

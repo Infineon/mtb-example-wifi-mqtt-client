@@ -103,6 +103,7 @@ cy_mqtt_publish_info_t publish_info =
 static void publisher_init(void);
 static void publisher_deinit(void);
 static void isr_button_press(void *callback_arg, cyhal_gpio_event_t event);
+void print_heap_usage(char *msg);
 
 /******************************************************************************
  * Function Name: publisher_task
@@ -181,6 +182,8 @@ void publisher_task(void *pvParameters)
                         mqtt_task_cmd = HANDLE_MQTT_PUBLISH_FAILURE;
                         xQueueSend(mqtt_task_q, &mqtt_task_cmd, portMAX_DELAY);
                     }
+
+                    print_heap_usage("publisher_task: After publishing an MQTT message");
                     break;
                 }
             }

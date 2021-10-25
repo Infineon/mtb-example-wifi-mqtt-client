@@ -48,12 +48,6 @@
 #include "task.h"
 
 /******************************************************************************
-* Global Variables
-******************************************************************************/
-/* This enables RTOS aware debugging. */
-volatile int uxTopUsedPriority;
-
-/******************************************************************************
  * Function Name: main
  ******************************************************************************
  * Summary:
@@ -70,9 +64,6 @@ volatile int uxTopUsedPriority;
 int main()
 {
     cy_rslt_t result;
-
-    /* This enables RTOS aware debugging in OpenOCD. */
-    uxTopUsedPriority = configMAX_PRIORITIES - 1;
 
     /* Initialize the board support package. */
     result = cybsp_init();
@@ -91,11 +82,11 @@ int main()
     /* \x1b[2J\x1b[;H - ANSI ESC sequence to clear screen. */
     printf("\x1b[2J\x1b[;H");
     printf("===============================================================\n");
-    printf("CE229889 - AnyCloud Example: MQTT Client\n");
+    printf("CE229889 - MQTT Client\n");
     printf("===============================================================\n\n");
 
     /* Create the MQTT Client task. */
-    xTaskCreate(mqtt_client_task, "MQTT Client task", MQTT_CLIENT_TASK_STACK_SIZE, 
+    xTaskCreate(mqtt_client_task, "MQTT Client task", MQTT_CLIENT_TASK_STACK_SIZE,
                 NULL, MQTT_CLIENT_TASK_PRIORITY, NULL);
 
     /* Start the FreeRTOS scheduler. */

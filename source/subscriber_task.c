@@ -102,6 +102,7 @@ cy_mqtt_subscribe_info_t subscribe_info =
 *******************************************************************************/
 static void subscribe_to_topic(void);
 static void unsubscribe_from_topic(void);
+void print_heap_usage(char *msg);
 
 /******************************************************************************
  * Function Name: subscriber_task
@@ -162,6 +163,8 @@ void subscriber_task(void *pvParameters)
 
                     /* Update the current device state extern variable. */
                     current_device_state = subscriber_q_data.data;
+
+                    print_heap_usage("subscriber_task: After updating LED state");
                     break;
                 }
             }
@@ -271,6 +274,8 @@ void mqtt_subscription_callback(cy_mqtt_publish_info_t *received_msg_info)
         printf("  Subscriber: Received MQTT message not in valid format!\n");
         return;
     }
+
+    print_heap_usage("MQTT subscription callback");
 
     /* Send the command and data to subscriber task queue */
     xQueueSend(subscriber_task_q, &subscriber_q_data, portMAX_DELAY);
