@@ -5,7 +5,6 @@
 *
 * Related Document: See README.md
 *
-*
 *******************************************************************************
 * Copyright 2020-2021, Cypress Semiconductor Corporation (an Infineon company) or
 * an affiliate of Cypress Semiconductor Corporation.  All rights reserved.
@@ -47,6 +46,14 @@
 #include "FreeRTOS.h"
 #include "task.h"
 
+/* Include serial flash library and QSPI memory configurations only for the
+ * kits that require the Wi-Fi firmware to be loaded in external QSPI NOR flash.
+ */
+#if defined(TARGET_CY8CPROTO_062S3_4343W)
+#include "cy_serial_flash_qspi.h"
+#include "cycfg_qspi_memslot.h"
+#endif
+
 /******************************************************************************
  * Function Name: main
  ******************************************************************************
@@ -78,6 +85,17 @@ int main()
     /* Initialize retarget-io to use the debug UART port. */
     cy_retarget_io_init(CYBSP_DEBUG_UART_TX, CYBSP_DEBUG_UART_RX,
                         CY_RETARGET_IO_BAUDRATE);
+
+#if defined(TARGET_CY8CPROTO_062S3_4343W)
+    /* Initialize the QSPI serial NOR flash with clock frequency of 50 MHz. */
+    const uint32_t bus_frequency = 50000000lu;
+    cy_serial_flash_qspi_init(smifMemConfigs[0], CYBSP_QSPI_D0, CYBSP_QSPI_D1,
+                                  CYBSP_QSPI_D2, CYBSP_QSPI_D3, NC, NC, NC, NC,
+                                  CYBSP_QSPI_SCK, CYBSP_QSPI_SS, bus_frequency);
+
+    /* Enable the XIP mode to get the Wi-Fi firmware from the external flash. */
+    cy_serial_flash_qspi_enable_xip(true);
+#endif
 
     /* \x1b[2J\x1b[;H - ANSI ESC sequence to clear screen. */
     printf("\x1b[2J\x1b[;H");

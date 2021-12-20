@@ -79,6 +79,14 @@
 #define PUBLISHER_TASK_QUEUE_LENGTH     (3u)
 
 /******************************************************************************
+* Function Prototypes
+*******************************************************************************/
+static void publisher_init(void);
+static void publisher_deinit(void);
+static void isr_button_press(void *callback_arg, cyhal_gpio_event_t event);
+void print_heap_usage(char *msg);
+
+/******************************************************************************
 * Global Variables
 *******************************************************************************/
 /* FreeRTOS task handle for this task. */
@@ -97,13 +105,12 @@ cy_mqtt_publish_info_t publish_info =
     .dup = false
 };
 
-/******************************************************************************
-* Function Prototypes
-*******************************************************************************/
-static void publisher_init(void);
-static void publisher_deinit(void);
-static void isr_button_press(void *callback_arg, cyhal_gpio_event_t event);
-void print_heap_usage(char *msg);
+/* Structure that stores the callback data for the GPIO interrupt event. */
+cyhal_gpio_callback_data_t cb_data =
+{
+    .callback = isr_button_press,
+    .callback_arg = NULL
+};
 
 /******************************************************************************
  * Function Name: publisher_task
@@ -210,7 +217,7 @@ static void publisher_init(void)
     /* Initialize the user button GPIO and register interrupt on falling edge. */
     cyhal_gpio_init(CYBSP_USER_BTN, CYHAL_GPIO_DIR_INPUT,
                     CYHAL_GPIO_DRIVE_PULLUP, CYBSP_BTN_OFF);
-    cyhal_gpio_register_callback(CYBSP_USER_BTN, isr_button_press, NULL);
+    cyhal_gpio_register_callback(CYBSP_USER_BTN, &cb_data);
     cyhal_gpio_enable_event(CYBSP_USER_BTN, CYHAL_GPIO_IRQ_FALL,
                             USER_BTN_INTR_PRIORITY, true);
     
@@ -235,7 +242,7 @@ static void publisher_init(void)
 static void publisher_deinit(void)
 {
     /* Deregister the ISR and disable the interrupt on the user button. */
-    cyhal_gpio_register_callback(CYBSP_USER_BTN, NULL, NULL);
+    cyhal_gpio_register_callback(CYBSP_USER_BTN, &cb_data);
     cyhal_gpio_enable_event(CYBSP_USER_BTN, CYHAL_GPIO_IRQ_FALL,
                             USER_BTN_INTR_PRIORITY, false);
     cyhal_gpio_free(CYBSP_USER_BTN);
