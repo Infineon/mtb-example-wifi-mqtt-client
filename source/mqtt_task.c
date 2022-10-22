@@ -12,7 +12,7 @@
 *
 *
 *******************************************************************************
-* Copyright 2020-2021, Cypress Semiconductor Corporation (an Infineon company) or
+* Copyright 2020-2022, Cypress Semiconductor Corporation (an Infineon company) or
 * an affiliate of Cypress Semiconductor Corporation.  All rights reserved.
 *
 * This software, including source code, documentation and related
@@ -63,7 +63,6 @@
 /* Middleware libraries */
 #include "cy_retarget_io.h"
 #include "cy_wcm.h"
-#include "cy_lwip.h"
 
 #include "cy_mqtt_api.h"
 #include "clock.h"
@@ -136,6 +135,7 @@ uint8_t *mqtt_network_buffer = NULL;
 static cy_rslt_t wifi_connect(void);
 static cy_rslt_t mqtt_init(void);
 static cy_rslt_t mqtt_connect(void);
+
 void mqtt_event_callback(cy_mqtt_t mqtt_handle, cy_mqtt_event_t event, void *user_data);
 static void cleanup(void);
 void print_heap_usage(char *msg);

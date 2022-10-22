@@ -8,7 +8,7 @@
 *
 *
 *******************************************************************************
-* Copyright 2020-2021, Cypress Semiconductor Corporation (an Infineon company) or
+* Copyright 2020-2022, Cypress Semiconductor Corporation (an Infineon company) or
 * an affiliate of Cypress Semiconductor Corporation.  All rights reserved.
 *
 * This software, including source code, documentation and related
@@ -51,13 +51,13 @@
 
 /***************** MQTT CLIENT CONNECTION CONFIGURATION MACROS *****************/
 /* MQTT Broker/Server address and port used for the MQTT connection. */
-#define MQTT_BROKER_ADDRESS               "MY_MQTT_BROKER_ADDRESS"
-#define MQTT_PORT                         8883
+#define MQTT_BROKER_ADDRESS               "test.mosquitto.org"
+#define MQTT_PORT                         1883
 
 /* Set this macro to 1 if a secure (TLS) connection to the MQTT Broker is  
  * required to be established, else 0.
  */
-#define MQTT_SECURE_CONNECTION            ( 1 )
+#define MQTT_SECURE_CONNECTION            ( 0 )
 
 /* Configure the user credentials to be sent as part of MQTT CONNECT packet */
 #define MQTT_USERNAME                     "User"

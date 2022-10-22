@@ -11,7 +11,7 @@
 *
 *
 *******************************************************************************
-* Copyright 2020-2021, Cypress Semiconductor Corporation (an Infineon company) or
+* Copyright 2020-2022, Cypress Semiconductor Corporation (an Infineon company) or
 * an affiliate of Cypress Semiconductor Corporation.  All rights reserved.
 *
 * This software, including source code, documentation and related
@@ -63,7 +63,7 @@
 * Macros
 ******************************************************************************/
 /* Interrupt priority for User Button Input. */
-#define USER_BTN_INTR_PRIORITY          (5)
+#define USER_BTN_INTR_PRIORITY          (3)
 
 /* The maximum number of times each PUBLISH in this example will be retried. */
 #define PUBLISH_RETRY_LIMIT             (10)
