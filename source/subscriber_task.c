@@ -90,7 +90,7 @@ QueueHandle_t subscriber_task_q;
 uint32_t current_device_state = DEVICE_OFF_STATE;
 
 /* Configure the subscription information structure. */
-cy_mqtt_subscribe_info_t subscribe_info =
+static cy_mqtt_subscribe_info_t subscribe_info =
 {
     .qos = (cy_mqtt_qos_t) MQTT_MESSAGES_QOS,
     .topic = MQTT_SUB_TOPIC,
@@ -202,7 +202,7 @@ static void subscribe_to_topic(void)
         result = cy_mqtt_subscribe(mqtt_connection, &subscribe_info, SUBSCRIPTION_COUNT);
         if (result == CY_RSLT_SUCCESS)
         {
-            printf("MQTT client subscribed to the topic '%.*s' successfully.\n\n", 
+            printf("\nMQTT client subscribed to the topic '%.*s' successfully.\n", 
                     subscribe_info.topic_len, subscribe_info.topic);
             break;
         }
@@ -212,7 +212,7 @@ static void subscribe_to_topic(void)
 
     if (result != CY_RSLT_SUCCESS)
     {
-        printf("MQTT Subscribe failed with error 0x%0X after %d retries...\n\n", 
+        printf("\nMQTT Subscribe failed with error 0x%0X after %d retries...\n\n", 
                (int)result, MAX_SUBSCRIBE_RETRIES);
 
         /* Notify the MQTT client task about the subscription failure */
@@ -247,10 +247,10 @@ void mqtt_subscription_callback(cy_mqtt_publish_info_t *received_msg_info)
     /* Data to be sent to the subscriber task queue. */
     subscriber_data_t subscriber_q_data;
 
-    printf("  Subsciber: Incoming MQTT message received:\n"
+    printf("  \nSubsciber: Incoming MQTT message received:\n"
            "    Publish topic name: %.*s\n"
            "    Publish QoS: %d\n"
-           "    Publish payload: %.*s\n\n",
+           "    Publish payload: %.*s\n",
            received_msg_info->topic_len, received_msg_info->topic,
            (int) received_msg_info->qos,
            (int) received_msg_info->payload_len, (const char *)received_msg_info->payload);

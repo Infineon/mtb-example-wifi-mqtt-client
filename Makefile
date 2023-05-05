@@ -33,6 +33,7 @@
 # COMBINED    -- Top Level Makefile usually for single standalone application
 # APPLICATION -- Top Level Makefile usually for multi project application
 # PROJECT     -- Project Makefile under Application
+#
 MTB_TYPE=COMBINED
 
 # Target board/hardware (BSP).
@@ -179,11 +180,13 @@ CY_GETLIBS_SHARED_PATH=../
 #
 CY_GETLIBS_SHARED_NAME=mtb_shared
 
-# Absolute path to the compiler's "bin" directory.
-#
+# Absolute path to the compiler's "bin" directory. The variable name depends on the 
+# toolchain used for the build. Refer to the ModusToolbox user guide to get the correct
+# variable name for the toolchain used in your build.
+# 
 # The default depends on the selected TOOLCHAIN (GCC_ARM uses the ModusToolbox
 # software provided compiler by default).
-CY_COMPILER_PATH=
+CY_COMPILER_GCC_ARM_DIR=
 
 
 # Locate ModusToolbox helper tools folders in default installation

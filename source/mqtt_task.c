@@ -90,6 +90,9 @@
 #define MQTT_CONNECTION_SUCCESS          (1lu << 5)
 #define MQTT_MSG_RECEIVED                (1lu << 6)
 
+/*String that describes the MQTT handle that is being created in order to uniquely identify it*/
+#define MQTT_HANDLE_DESCRIPTOR            "MQTThandleID"
+
 /* Macro to check if the result of an operation was successful and set the 
  * corresponding bit in the status_flag based on 'init_mask' parameter. When 
  * it has failed, print the error message and return the result to the 
@@ -136,7 +139,7 @@ static cy_rslt_t wifi_connect(void);
 static cy_rslt_t mqtt_init(void);
 static cy_rslt_t mqtt_connect(void);
 
-void mqtt_event_callback(cy_mqtt_t mqtt_handle, cy_mqtt_event_t event, void *user_data);
+static void mqtt_event_callback(cy_mqtt_t mqtt_handle, cy_mqtt_event_t event, void *user_data);
 static void cleanup(void);
 void print_heap_usage(char *msg);
 
@@ -226,7 +229,7 @@ void mqtt_client_task(void *pvParameters)
         goto exit_cleanup;
     }
 
-    print_heap_usage("mqtt_client_task: subscriber & publisher tasks created");
+    print_heap_usage("mqtt_client_task: subscriber & publisher tasks created\n");
 
     while (true)
     {
@@ -273,14 +276,14 @@ void mqtt_client_task(void *pvParameters)
                     if (cy_wcm_is_connected_to_ap() == 0)
                     {
                         status_flag &= ~(WIFI_CONNECTED);
-                        printf("Initiating Wi-Fi Reconnection...\n");
+                        printf("\nInitiating Wi-Fi Reconnection...\n");
                         if (CY_RSLT_SUCCESS != wifi_connect())
                         {
                             goto exit_cleanup;
                         }
                     }
 
-                    printf("Initiating MQTT Reconnection...\n");
+                    printf("\nInitiating MQTT Reconnection...\n");
                     if (CY_RSLT_SUCCESS != mqtt_connect())
                     {
                         goto exit_cleanup;
@@ -352,7 +355,7 @@ static cy_rslt_t wifi_connect(void)
         memcpy(connect_param.ap_credentials.password, WIFI_PASSWORD, sizeof(WIFI_PASSWORD));
         connect_param.ap_credentials.security = WIFI_SECURITY;
 
-        printf("\nConnecting to Wi-Fi AP '%s'\n\n", connect_param.ap_credentials.SSID);
+        printf("\nWi-Fi Connecting to '%s'\n", connect_param.ap_credentials.SSID);
 
         /* Connect to the Wi-Fi AP. */
         for (uint32_t retry_count = 0; retry_count < MAX_WIFI_CONN_RETRIES; retry_count++)
@@ -378,7 +381,7 @@ static cy_rslt_t wifi_connect(void)
                 return result;
             }
 
-            printf("Connection to Wi-Fi network failed with error code 0x%0X. Retrying in %d ms. Retries left: %d\n",
+            printf("Wi-Fi Connection failed. Error code:0x%0X. Retrying in %d ms. Retries left: %d\n",
                 (int)result, WIFI_CONN_RETRY_INTERVAL_MS, (int)(MAX_WIFI_CONN_RETRIES - retry_count - 1));
             vTaskDelay(pdMS_TO_TICKS(WIFI_CONN_RETRY_INTERVAL_MS));
         }
@@ -413,7 +416,7 @@ static cy_rslt_t mqtt_init(void)
 
     /* Initialize the MQTT library. */
     result = cy_mqtt_init();
-    CHECK_RESULT(result, LIBS_INITIALIZED, "MQTT library initialization failed!\n\n");
+    CHECK_RESULT(result, LIBS_INITIALIZED, "\nMQTT library initialization failed!\n");
 
     /* Allocate buffer for MQTT send and receive operations. */
     mqtt_network_buffer = (uint8_t *) pvPortMalloc(sizeof(uint8_t) * MQTT_NETWORK_BUFFER_SIZE);
@@ -425,12 +428,19 @@ static cy_rslt_t mqtt_init(void)
 
     /* Create the MQTT client instance. */
     result = cy_mqtt_create(mqtt_network_buffer, MQTT_NETWORK_BUFFER_SIZE,
-                            security_info, &broker_info,
-                            (cy_mqtt_callback_t)mqtt_event_callback, NULL,
+                            security_info, &broker_info,MQTT_HANDLE_DESCRIPTOR,
                             &mqtt_connection);
-    CHECK_RESULT(result, MQTT_INSTANCE_CREATED, "MQTT instance creation failed!\n\n");
-    printf("MQTT library initialization successful.\n\n");
-
+                            
+    CHECK_RESULT(result, MQTT_INSTANCE_CREATED, "\nMQTT instance creation failed!\n");
+    if(CY_RSLT_SUCCESS == result)
+    {
+        /* Register a MQTT event callback */
+        result = cy_mqtt_register_event_callback( mqtt_connection, (cy_mqtt_callback_t)mqtt_event_callback, NULL );
+        if(CY_RSLT_SUCCESS == result)
+        {       
+            printf("\nMQTT library initialization successful.\n");
+        }
+    }   
     return result;
 }
 
@@ -479,7 +489,7 @@ static cy_rslt_t mqtt_connect(void)
     connection_info.client_id = mqtt_client_identifier;
     connection_info.client_id_len = strlen(mqtt_client_identifier);
 
-    printf("\nMQTT client '%.*s' connecting to MQTT broker '%.*s'...\n\n",
+    printf("\n'%.*s' connecting to MQTT broker '%.*s'...\n",
            connection_info.client_id_len,
            connection_info.client_id,
            broker_info.hostname_len,
@@ -489,7 +499,7 @@ static cy_rslt_t mqtt_connect(void)
     {
         if (cy_wcm_is_connected_to_ap() == 0)
         {
-            printf("Unexpectedly disconnected from Wi-Fi network! Initiating Wi-Fi reconnection...\n");
+            printf("\nUnexpectedly disconnected from Wi-Fi network! \nInitiating Wi-Fi reconnection...\n");
             status_flag &= ~(WIFI_CONNECTED);
 
             /* Initiate Wi-Fi reconnection. */
@@ -505,7 +515,7 @@ static cy_rslt_t mqtt_connect(void)
 
         if (result == CY_RSLT_SUCCESS)
         {
-            printf("\nMQTT connection successful.\n\n");
+            printf("MQTT connection successful.\r\n");
 
             /* Set the appropriate bit in the status_flag to denote successful
              * MQTT connection, and return the result to the calling function.
@@ -514,7 +524,7 @@ static cy_rslt_t mqtt_connect(void)
             return result;
         }
 
-        printf("MQTT connection failed with error code 0x%0X. Retrying in %d ms. Retries left: %d\n", 
+        printf("\nMQTT connection failed with error code 0x%0X. \nRetrying in %d ms. Retries left: %d\n", 
                (int)result, MQTT_CONN_RETRY_INTERVAL_MS, (int)(MAX_MQTT_CONN_RETRIES - retry_count - 1));
         vTaskDelay(pdMS_TO_TICKS(MQTT_CONN_RETRY_INTERVAL_MS));
     }
@@ -546,7 +556,7 @@ static cy_rslt_t mqtt_connect(void)
  *  void
  *
  ******************************************************************************/
-void mqtt_event_callback(cy_mqtt_t mqtt_handle, cy_mqtt_event_t event, void *user_data)
+static void mqtt_event_callback(cy_mqtt_t mqtt_handle, cy_mqtt_event_t event, void *user_data)
 {
     cy_mqtt_publish_info_t *received_msg;
     mqtt_task_cmd_t mqtt_task_cmd;
@@ -582,7 +592,9 @@ void mqtt_event_callback(cy_mqtt_t mqtt_handle, cy_mqtt_event_t event, void *use
             /* Incoming MQTT message has been received. Send this message to 
              * the subscriber callback function to handle it. 
              */
+
             received_msg = &(event.data.pub_msg.received_message);
+
             mqtt_subscription_callback(received_msg);
             break;
         }
@@ -645,16 +657,35 @@ static cy_rslt_t mqtt_get_unique_client_identifier(char *mqtt_client_identifier)
  ******************************************************************************/
 static void cleanup(void)
 {
+    cy_rslt_t status = CY_RSLT_SUCCESS;
+
     /* Disconnect the MQTT connection if it was established. */
     if (status_flag & MQTT_CONNECTION_SUCCESS)
     {
-        printf("Disconnecting from the MQTT Broker...\n");
-        cy_mqtt_disconnect(mqtt_connection);
+        status = cy_mqtt_disconnect(mqtt_connection);
+
+        if (status == CY_RSLT_SUCCESS)
+        {
+            printf("Disconnected from the MQTT Broker...\n");
+        }
+        else
+        {
+            printf("MQTT disconnect API failed unexpectedly.\n");
+        }
     }
     /* Delete the MQTT instance if it was created. */
     if (status_flag & MQTT_INSTANCE_CREATED)
     {
-        cy_mqtt_delete(mqtt_connection);
+        status = cy_mqtt_delete(mqtt_connection);
+
+        if (status == CY_RSLT_SUCCESS)
+        {
+            printf("Removed MQTT connection info from stack...\n");
+        }
+        else
+        {
+            printf("MQTT delete API failed unexpectedly.\n");
+        }
     }
     /* Deallocate the network buffer. */
     if (status_flag & BUFFER_INITIALIZED)
@@ -664,20 +695,44 @@ static void cleanup(void)
     /* Deinit the MQTT library. */
     if (status_flag & LIBS_INITIALIZED)
     {
-        cy_mqtt_deinit();
+        status = cy_mqtt_deinit();
+
+        if (status == CY_RSLT_SUCCESS)
+        {
+            printf("Deinitialized MQTT stack...\n");
+        }
+        else
+        {
+            printf("MQTT deinit API failed unexpectedly.\n");
+        }
     }
     /* Disconnect from Wi-Fi AP. */
     if (status_flag & WIFI_CONNECTED)
     {
-        if (cy_wcm_disconnect_ap() == CY_RSLT_SUCCESS)
+        status = cy_wcm_disconnect_ap();
+
+        if (status == CY_RSLT_SUCCESS)
         {
             printf("Disconnected from the Wi-Fi AP!\n");
+        }
+        else
+        {
+            printf("WCM disconnect AP failed unexpectedly.\n");
         }
     }
     /* De-initialize the Wi-Fi Connection Manager. */
     if (status_flag & WCM_INITIALIZED)
     {
-        cy_wcm_deinit();
+        status = cy_wcm_deinit();
+
+        if (status == CY_RSLT_SUCCESS)
+        {
+            printf("Deinitialized Wifi connection...\n");
+        }
+        else
+        {
+            printf("WCM deinit API failed unexpectedly.\n");
+        }
     }
 }
 

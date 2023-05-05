@@ -174,7 +174,7 @@ void publisher_task(void *pvParameters)
                     publish_info.payload = publisher_q_data.data;
                     publish_info.payload_len = strlen(publish_info.payload);
 
-                    printf("  Publisher: Publishing '%s' on the topic '%s'\n\n",
+                    printf("\nPublisher: Publishing '%s' on the topic '%s'\n",
                            (char *) publish_info.payload, publish_info.topic);
 
                     result = cy_mqtt_publish(mqtt_connection, &publish_info);
@@ -221,7 +221,7 @@ static void publisher_init(void)
     cyhal_gpio_enable_event(CYBSP_USER_BTN, CYHAL_GPIO_IRQ_FALL,
                             USER_BTN_INTR_PRIORITY, true);
     
-    printf("Press the user button (SW2) to publish \"%s\"/\"%s\" on the topic '%s'...\n\n", 
+    printf("\nPress the user button (SW2) to publish \"%s\"/\"%s\" on the topic '%s'...\n", 
            MQTT_DEVICE_ON_MESSAGE, MQTT_DEVICE_OFF_MESSAGE, publish_info.topic);
 }
 
