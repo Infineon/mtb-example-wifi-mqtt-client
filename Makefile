@@ -186,7 +186,7 @@ CY_GETLIBS_SHARED_NAME=mtb_shared
 # 
 # The default depends on the selected TOOLCHAIN (GCC_ARM uses the ModusToolbox
 # software provided compiler by default).
-CY_COMPILER_GCC_ARM_DIR=
+CY_COMPILER_PATH=
 
 
 # Locate ModusToolbox helper tools folders in default installation

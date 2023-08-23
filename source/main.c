@@ -1,4 +1,4 @@
-/******************************************************************************
+/*******************************************************************************
 * File Name:   main.c
 *
 * Description: This is the source code for MQTT Client Example for ModusToolbox.
