@@ -40,7 +40,7 @@ MTB_TYPE=COMBINED
 # To change the target, it is recommended to use the Library manager
 # ('make library-manager' from command line), which will also update Eclipse IDE launch
 # configurations.
-TARGET=CY8CPROTO-062-4343W
+TARGET=CY8CPROTO-062S2-43439
 
 # Name of application (used to derive name of final linked file).
 #
@@ -67,10 +67,11 @@ TOOLCHAIN=GCC_ARM
 # for your IDE.
 CONFIG=Debug
 
-# Default value for CORE = CM4
-# You can change it to CM0P to port your application to CM0P.
+# Default value for CORE is CM4 for PSoC 6 MCU and CM7 for XMC7000
+# You can change it to CM0P to port your application to CM0+.
+# Uncomment the below line to use CM0+ core.
 # 
-CORE=CM4
+# CORE=CM0P
 
 # If set to "true" or "1", display full command-lines when building.
 VERBOSE=
@@ -157,6 +158,9 @@ PREBUILD=
 # Custom post-build commands to run.
 POSTBUILD=
 
+# To change the default policy
+CY_SECURE_POLICY_NAME=policy_single_CM0_CM4_smif_swap
+
 
 ################################################################################
 # Paths
@@ -186,7 +190,7 @@ CY_GETLIBS_SHARED_NAME=mtb_shared
 # 
 # The default depends on the selected TOOLCHAIN (GCC_ARM uses the ModusToolbox
 # software provided compiler by default).
-CY_COMPILER_PATH=
+CY_COMPILER_GCC_ARM_DIR=
 
 
 # Locate ModusToolbox helper tools folders in default installation

@@ -74,7 +74,16 @@ int main()
 {
     cy_rslt_t result;
 
+#if defined (CY_DEVICE_SECURE)
+    cyhal_wdt_t wdt_obj;
+
+    /* Clear watchdog timer so that it doesn't trigger a reset */
+    result = cyhal_wdt_init(&wdt_obj, cyhal_wdt_get_max_timeout_ms());
+    CY_ASSERT(CY_RSLT_SUCCESS == result);
+    cyhal_wdt_free(&wdt_obj);
+#endif /* #if defined (CY_DEVICE_SECURE) */
     /* Initialize the board support package. */
+    
     result = cybsp_init();
     CY_ASSERT(CY_RSLT_SUCCESS == result);
 
@@ -108,6 +117,10 @@ int main()
 
 #if defined(COMPONENT_CM4)
     printf("CE229889 - MQTT Client running on CM4\n");
+#endif
+
+#if defined(COMPONENT_CM7)
+    printf("CE229889 - MQTT Client running on CM7\n");
 #endif
     printf("===============================================================\n\n");
 

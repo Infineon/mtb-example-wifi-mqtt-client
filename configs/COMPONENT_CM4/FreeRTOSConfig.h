@@ -96,7 +96,6 @@
 
 #define configUSE_PREEMPTION                    1
 #define configUSE_PORT_OPTIMISED_TASK_SELECTION 0
-extern uint32_t SystemCoreClock;
 #define configCPU_CLOCK_HZ                      SystemCoreClock
 #define configTICK_RATE_HZ                      1000u
 #define configMAX_PRIORITIES                    7

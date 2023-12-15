@@ -29,7 +29,6 @@
 #ifndef MBEDTLS_USER_CONFIG_HEADER
 #define MBEDTLS_USER_CONFIG_HEADER
 
-
 /**
  * Compiling Mbed TLS for Cortex-M0/0+/1/M23 cores with optimization enabled and on ARMC6 compiler results in errors. 
  * These cores lack the required full Thumb-2 support, causing the inline assembly to require more registers than available.
@@ -43,6 +42,12 @@
 #define MULADDC_CANNOT_USE_R7
 #endif
 
+/* Currently there is a bug with MBEDTLS 3.4.0 compilation with IAR compiler when assembly instructions are enabled. Hence
+ * disabling assembly instructions for IAR. This will be fixed in future MBEDTLS releases.
+ */
+#if defined (__IAR_SYSTEMS_ICC__)
+#undef MBEDTLS_HAVE_ASM
+#endif
 
 /**
  * \def MBEDTLS_HAVE_TIME_DATE
@@ -199,6 +204,35 @@
  */
 #define MBEDTLS_ENTROPY_FORCE_SHA256
 
+/*
+ * \def MBEDTLS_SSL_SRV_C
+ *
+ * Enables server option in device
+ *
+ * Comment this macro to support server
+ */
+#undef MBEDTLS_SSL_SRV_C
+/*
+ * \def MBEDTLS_CHACHA20_C
+ * \def MBEDTLS_CHACHAPOLY_C
+ * \def MBEDTLS_POLY1305_C
+ *
+ * Enable support of CHACHA20 and CHACHAPOLY algorithm.
+ */
+#undef MBEDTLS_CHACHA20_C
+
+#undef MBEDTLS_CHACHAPOLY_C
+
+#undef MBEDTLS_POLY1305_C
+
+/*
+ * \def MBEDTLS_CAMELLIA_C
+ *
+ * Enable to support camellia cipher suites.
+ */
+#undef MBEDTLS_CAMELLIA_C
+
+
 /**
  * \def MBEDTLS_SELF_TEST
  *
@@ -307,6 +341,52 @@
 #undef MBEDTLS_SSL_PROTO_DTLS
 
 /**
+ * \def MBEDTLS_SSL_DTLS_CONNECTION_ID_COMPAT
+ *
+ * Defines whether RFC 9146 (default) or the legacy version
+ * (version draft-ietf-tls-dtls-connection-id-05,
+ * https://tools.ietf.org/html/draft-ietf-tls-dtls-connection-id-05)
+ * is used.
+ *
+ * Set the value to 0 for the standard version, and
+ * 1 for the legacy draft version.
+ *
+ * \deprecated Support for the legacy version of the DTLS
+ *             Connection ID feature is deprecated. Please
+ *             switch to the standardized version defined
+ *             in RFC 9146 enabled by utilizing
+ *             MBEDTLS_SSL_DTLS_CONNECTION_ID without use
+ *             of MBEDTLS_SSL_DTLS_CONNECTION_ID_COMPAT.
+ *
+ * Requires: MBEDTLS_SSL_DTLS_CONNECTION_ID
+ */
+#undef MBEDTLS_SSL_DTLS_CONNECTION_ID_COMPAT
+
+/**
+ * \def MBEDTLS_SSL_DTLS_CONNECTION_ID
+ *
+ * Enable support for the DTLS Connection ID (CID) extension,
+ * which allows to identify DTLS connections across changes
+ * in the underlying transport. The CID functionality is described
+ * in RFC 9146.
+ *
+ * Setting this option enables the SSL APIs `mbedtls_ssl_set_cid()`,
+ * mbedtls_ssl_get_own_cid()`, `mbedtls_ssl_get_peer_cid()` and
+ * `mbedtls_ssl_conf_cid()`. See the corresponding documentation for
+ * more information.
+ *
+ * The maximum lengths of outgoing and incoming CIDs can be configured
+ * through the options
+ * - MBEDTLS_SSL_CID_OUT_LEN_MAX
+ * - MBEDTLS_SSL_CID_IN_LEN_MAX.
+ *
+ * Requires: MBEDTLS_SSL_PROTO_DTLS
+ *
+ * Uncomment to enable the Connection ID extension.
+ */
+#undef MBEDTLS_SSL_DTLS_CONNECTION_ID
+
+/**
  * \def MBEDTLS_SSL_DTLS_ANTI_REPLAY
  *
  * Enable support for the anti-replay mechanism in DTLS.
@@ -367,20 +447,6 @@
 #undef MBEDTLS_SSL_DTLS_BADMAC_LIMIT
 
 /**
- * \def MBEDTLS_SSL_SESSION_TICKETS
- *
- * Enable support for RFC 5077 session tickets in SSL.
- * Client-side, provides full support for session tickets (maintenance of a
- * session store remains the responsibility of the application, though).
- * Server-side, you also need to provide callbacks for writing and parsing
- * tickets, including authenticated encryption and key management. Example
- * callbacks are provided by MBEDTLS_SSL_TICKET_C.
- *
- * Comment this macro to disable support for SSL session tickets
- */
-#undef MBEDTLS_SSL_SESSION_TICKETS
-
-/**
  * \def MBEDTLS_SSL_EXPORT_KEYS
  *
  * Enable support for exporting key block and master secret.
@@ -399,16 +465,6 @@
  * Comment this macro to disable support for truncated HMAC in SSL
  */
 #undef MBEDTLS_SSL_TRUNCATED_HMAC
-
-/**
- * \def MBEDTLS_X509_RSASSA_PSS_SUPPORT
- *
- * Enable parsing and verification of X.509 certificates, CRLs and CSRS
- * signed with RSASSA-PSS (aka PKCS#1 v2.1).
- *
- * Comment this macro to disallow using RSASSA-PSS in certificates.
- */
-#undef MBEDTLS_X509_RSASSA_PSS_SUPPORT
 
 /**
  * \def MBEDTLS_AESNI_C
@@ -593,15 +649,6 @@
 #undef MBEDTLS_RIPEMD160_C
 
 /**
- * \def MBEDTLS_PK_RSA_ALT_SUPPORT
- *
- * Support external private RSA keys (eg from a HSM) in the PK layer.
- *
- * Comment this macro to disable support for external private RSA keys.
- */
-#undef MBEDTLS_PK_RSA_ALT_SUPPORT
-
-/**
  * \def MBEDTLS_ARC4_C
  *
  * Enable the ARCFOUR stream cipher.
@@ -725,22 +772,6 @@
 #undef MBEDTLS_KEY_EXCHANGE_RSA_PSK_ENABLED
 
 /**
- * \def MBEDTLS_PSA_CRYPTO_C
- *
- * Enable the Platform Security Architecture cryptography API.
- *
- * \warning The PSA Crypto API is still beta status. While you're welcome to
- * experiment using it, incompatible API changes are still possible, and some
- * parts may not have reached the same quality as the rest of Mbed TLS yet.
- *
- * Module:  library/psa_crypto.c
- *
- * Requires: MBEDTLS_CTR_DRBG_C, MBEDTLS_ENTROPY_C
- *
- */
-#undef MBEDTLS_PSA_CRYPTO_C
-
-/**
  * \def MBEDTLS_PSA_CRYPTO_STORAGE_C
  *
  * Enable the Platform Security Architecture persistent key storage.
@@ -766,6 +797,33 @@
 #undef MBEDTLS_PSA_ITS_FILE_C
 
 /**
+ * \def MBEDTLS_SSL_PROTO_TLS1_3
+ *
+ * Enable support for TLS 1.3.
+ *
+ * \note The support for TLS 1.3 is not comprehensive yet, in particular
+ *       pre-shared keys are not supported.
+ *       See docs/architecture/tls13-support.md for a description of the TLS
+ *       1.3 support that this option enables.
+ *
+ * Requires: MBEDTLS_SSL_KEEP_PEER_CERTIFICATE
+ * Requires: MBEDTLS_PSA_CRYPTO_C
+ *
+ * \note TLS 1.3 uses PSA crypto for cryptographic operations that are
+ *       directly performed by TLS 1.3 code. As a consequence, you must
+ *       call psa_crypto_init() before the first TLS 1.3 handshake.
+ *
+ * \note Cryptographic operations performed indirectly via another module
+ *       (X.509, PK) or by code shared with TLS 1.2 (record protection,
+ *       running handshake hash) only use PSA crypto if
+ *       #MBEDTLS_USE_PSA_CRYPTO is enabled.
+ *
+ * Uncomment this macro to enable the support for TLS 1.3.
+ */
+#define MBEDTLS_SSL_PROTO_TLS1_3
+
+#ifndef MBEDTLS_SSL_PROTO_TLS1_3
+/**
  * \def MBEDTLS_SSL_KEEP_PEER_CERTIFICATE
  *
  * This option controls the availability of the API mbedtls_ssl_get_peer_cert()
@@ -786,6 +844,77 @@
  * after the handshake.
  */
 #undef MBEDTLS_SSL_KEEP_PEER_CERTIFICATE
+#endif
+
+/* MBEDTLS 3.4 version has build error when TLS1.3 is enabled and session ticket flag is not enabled.
+ * Hence, enabling session ticket flag when TLS1.3 is enabled though we dont support.
+ * Note: User should not disable session ticket flag when TLS1.3 is enabled otherwise it will result into
+ *       build error.
+ */
+#ifndef MBEDTLS_SSL_PROTO_TLS1_3
+/**
+ * \def MBEDTLS_SSL_SESSION_TICKETS
+ *
+ * Enable support for RFC 5077 session tickets in SSL.
+ * Client-side, provides full support for session tickets (maintenance of a
+ * session store remains the responsibility of the application, though).
+ * Server-side, you also need to provide callbacks for writing and parsing
+ * tickets, including authenticated encryption and key management. Example
+ * callbacks are provided by MBEDTLS_SSL_TICKET_C.
+ *
+ * Comment this macro to disable support for SSL session tickets
+ */
+#undef MBEDTLS_SSL_SESSION_TICKETS
+#endif
+
+#ifdef MBEDTLS_SSL_PROTO_TLS1_3
+/**
+ * \def MBEDTLS_PK_RSA_ALT_SUPPORT
+ *
+ * Support external private RSA keys (eg from a HSM) in the PK layer.
+ *
+ * Comment this macro to disable support for external private RSA keys.
+ */
+#define MBEDTLS_PK_RSA_ALT_SUPPORT
+
+/**
+ * \def MBEDTLS_PSA_CRYPTO_C
+ *
+ * Enable the Platform Security Architecture cryptography API.
+ *
+ * \warning The PSA Crypto API is still beta status. While you're welcome to
+ * experiment using it, incompatible API changes are still possible, and some
+ * parts may not have reached the same quality as the rest of Mbed TLS yet.
+ *
+ * Module:  library/psa_crypto.c
+ *
+ * Requires: MBEDTLS_CTR_DRBG_C, MBEDTLS_ENTROPY_C
+ *
+ */
+#define MBEDTLS_PSA_CRYPTO_C
+
+/**
+ * \def MBEDTLS_SSL_TLS1_3_COMPATIBILITY_MODE
+ *
+ * Enable TLS 1.3 middlebox compatibility mode.
+ *
+ * As specified in Section D.4 of RFC 8446, TLS 1.3 offers a compatibility
+ * mode to make a TLS 1.3 connection more likely to pass through middle boxes
+ * expecting TLS 1.2 traffic.
+ *
+ * Turning on the compatibility mode comes at the cost of a few added bytes
+ * on the wire, but it doesn't affect compatibility with TLS 1.3 implementations
+ * that don't use it. Therefore, unless transmission bandwidth is critical and
+ * you know that middlebox compatibility issues won't occur, it is therefore
+ * recommended to set this option.
+ *
+ * Comment to disable compatibility mode for TLS 1.3. If
+ * MBEDTLS_SSL_PROTO_TLS1_3 is not enabled, this option does not have any
+ * effect on the build.
+ *
+ */
+#define MBEDTLS_SSL_TLS1_3_COMPATIBILITY_MODE
+#endif
 
 /**
  * \def MBEDTLS_DEPRECATED_REMOVED
@@ -800,7 +929,7 @@
 #define MBEDTLS_DEPRECATED_REMOVED
 
 /**
- * \def Enable MBEDTLS debug logs
+ * \def Enable MBEDTLS debug logs & set debug level
  *
  * MBEDTLS_VERBOSE values:
  * 0 No debug      - No logs are printed on console
@@ -810,6 +939,50 @@
  * 4 Verbose       - All the logs are printed on console
  */
 #define MBEDTLS_VERBOSE 0
+
+/** 
+ * \def Comment out below line in addition to setting MBEDTLS_VERBOSE value to get the MBEDTLS logs
+ *
+ * MBEDTLS_DEBUG_C flag is by default undefined to save code space (~60Kb). For low memory platform, when MBEDTLS_DEBUG_C is enabled
+ * make sure to remove unwanted features of MBEDTLS which are not used in the application to avoid code size overflow issues.
+ */
+#undef MBEDTLS_DEBUG_C
+
+/**
+ * \def MBEDTLS_LMS_C
+ *
+ * Enable the LMS stateful-hash asymmetric signature algorithm.
+ *
+ * Module:  library/lms.c
+ * Caller:
+ *
+ * Requires: MBEDTLS_PSA_CRYPTO_C
+ *
+ * Uncomment to enable the LMS verification algorithm and public key operations.
+ */
+#undef MBEDTLS_LMS_C
+
+/**
+ * \def MBEDTLS_PKCS7_C
+ *
+ * Enable PKCS #7 core for using PKCS #7-formatted signatures.
+ * RFC Link - https://tools.ietf.org/html/rfc2315
+ *
+ * Module:  library/pkcs7.c
+ *
+ * Requires: MBEDTLS_ASN1_PARSE_C, MBEDTLS_OID_C, MBEDTLS_PK_PARSE_C,
+ *           MBEDTLS_X509_CRT_PARSE_C MBEDTLS_X509_CRL_PARSE_C,
+ *           MBEDTLS_BIGNUM_C, MBEDTLS_MD_C
+ *
+ * This module is required for the PKCS #7 parsing modules.
+ */
+#undef MBEDTLS_PKCS7_C
+
+/* When TLS1.3 and TLS1.2 both are enabled, there is no version negotiation currently supported for server. Hence, when both
+ * are enabled, the below macro can be changed to force the TLS version to be used on server side. Please note that this macro
+ * is only used when device is acting as a server. for client, version negotiation is supported.
+ */
+#define FORCE_TLS_VERSION MBEDTLS_SSL_VERSION_TLS1_3
 
 /**
  * \def Enable alternate crypto implementations to use the hardware

@@ -51,7 +51,7 @@
 
 /***************** MQTT CLIENT CONNECTION CONFIGURATION MACROS *****************/
 /* MQTT Broker/Server address and port used for the MQTT connection. */
-#define MQTT_BROKER_ADDRESS               "test.mosquitto.org"
+#define MQTT_BROKER_ADDRESS               ""
 #define MQTT_PORT                         1883
 
 /* Set this macro to 1 if a secure (TLS) connection to the MQTT Broker is  
@@ -142,10 +142,10 @@
  * (TLS) protocol. As required by some MQTT Brokers, SNI typically includes the 
  * hostname in the Client Hello message sent during TLS handshake.
  * 
- * Uncomment the below line and specify the SNI Host Name to use this extension
+ * Specify the SNI Host Name to use this extension
  * as specified by the MQTT Broker.
  */
-// #define MQTT_SNI_HOSTNAME                 "SNI_HOST_NAME"
+#define MQTT_SNI_HOSTNAME                 (MQTT_BROKER_ADDRESS)
 
 /* A Network buffer is allocated for sending and receiving MQTT packets over 
  * the network. Specify the size of this buffer using this macro.
