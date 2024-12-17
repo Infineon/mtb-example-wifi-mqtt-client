@@ -126,9 +126,6 @@ DEFINES+= MQTT_MAX_CONNACK_RECEIVE_RETRY_COUNT=2
 # in design/hardware & Comment DEFINES+=CY_WIFI_HOST_WAKE_SW_FORCE=0.
 DEFINES+=CY_WIFI_HOST_WAKE_SW_FORCE=0
 
-#Disabled D-cache for XMC7000 based BSPs
-DEFINES+=CY_DISABLE_XMC7000_DATA_CACHE
-
 # Select softfp or hardfp floating point. Default is softfp.
 VFP_SELECT=
 
