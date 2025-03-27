@@ -988,15 +988,6 @@
  */
 #define FORCE_TLS_VERSION MBEDTLS_SSL_VERSION_TLS1_3
 
-#if !defined (CY_DISABLE_XMC7000_DATA_CACHE) && defined (__DCACHE_PRESENT) && (__DCACHE_PRESENT == 1U)
-/*
- * Disable MBEDTLS hardware acceleration for ARM and IAR toolchains.
- */
-#if defined(__ARMCC_VERSION) || defined(__IAR_SYSTEMS_ICC__)
-#define DISABLE_MBEDTLS_ACCELERATION
-#endif
-#endif
-
 /**
  * \def Enable alternate crypto implementations to use the hardware
  *      acceleration. Include The hardware acceleration module's (cy-mbedtls-acceleration)
